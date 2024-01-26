@@ -1,24 +1,19 @@
-print("Hello World")
-# import os
-# import subprocess
-#
-# # GitHub repository URL
-# repo_url = "https://github.com/your_username/your_repository.git"
-#
-# # Directory to clone the repository into
-# project_directory = "your_project_directory"
-#
-# # Clone the GitHub repository
-# subprocess.run(["git", "clone", repo_url, project_directory])
-#
-# # Change to the project directory
-# os.chdir(project_directory)
-#
-# # Install requirements from requirements.txt
-# subprocess.run(["pip", "install", "-r", "requirements.txt"])
-#
-# # Make main.py executable
-# subprocess.run(["chmod", "+x", "main.py"])
-#
-# # Run main.py
-# subprocess.run(["./main.py"])
+import RPi.GPIO as GPIO
+import time
+
+# Set up GPIO mode
+GPIO.setmode(GPIO.BCM)
+
+# Set up GPIO pin
+gpio_pin = 17  # Change this to match the GPIO pin you've connected
+GPIO.setup(gpio_pin, GPIO.OUT)
+
+# Turn on the relay (energize) to activate the motor
+GPIO.output(gpio_pin, GPIO.HIGH)
+time.sleep(2)  # Run the motor for 2 seconds (adjust as needed)
+
+# Turn off the relay (de-energize) to stop the motor
+GPIO.output(gpio_pin, GPIO.LOW)
+
+# Clean up GPIO settings
+GPIO.cleanup()
