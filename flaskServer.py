@@ -24,8 +24,8 @@ network={{
         commands = [
             "sudo sed -i '/interface=wlan0/,/auth_algs=1/d' /etc/dhcpcd.conf",
             "sudo sed -i '/interface=wlan0/,/dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h/d' /etc/dnsmasq.conf",
-            "sudo sed -i '/interface=wlan0/,/ssid=POOPYBUTT/d' /etc/hostapd/hostapd.conf",
-            "sudo sed -i 's/DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"/#DAEMON_CONF=\"\"/' /etc/default/hostapd",
+            "sudo sed -i '/interface=wlan0/,/ssid=PiZeroAP/d' /etc/hostapd/hostapd.conf",
+            'sudo sed -i \'s|DAEMON_CONF="/etc/hostapd/hostapd.conf"|DAEMON_CONF=""|\' /etc/default/hostapd',
             "sudo service dhcpcd restart",
             "sudo systemctl restart hostapd",
             "sudo systemctl restart dnsmasq"
