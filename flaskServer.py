@@ -45,10 +45,10 @@ network={{
             "sudo sed -i '/interface=wlan0/,/ssid=PiZeroAP/d' /etc/hostapd/hostapd.conf",
             'sudo sed -i "s|DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"|DAEMON_CONF=\"\"|" /etc/default/hostapd',
             "sudo service dhcpcd restart",
-            "sudo systemctl restart hostapd",
+            "sudo systemctl stop hostapd",  # Stop hostapd instead of restarting
+            "sudo systemctl disable hostapd",  # Optional: Disable hostapd to prevent it from starting on boot
             "sudo systemctl restart dnsmasq"
         ]
-
         for cmd in commands:
             subprocess.run(cmd, shell=True, check=True)
         time.sleep(20)
