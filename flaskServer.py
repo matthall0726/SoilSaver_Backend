@@ -72,6 +72,8 @@ def update_wifi():
 
     ssid = data['ssid']
     password = data['password']
+    print(ssid)
+    print(password)
 
     if setWifi(ssid, password):
         return jsonify({'message': 'Wi-Fi credentials updated successfully'})
