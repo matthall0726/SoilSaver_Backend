@@ -21,7 +21,11 @@ else:
 
 def setWifi(SSID, PASSWORD):
     try:
+        subprocess.run(['sudo', 'systemctl', 'enable', 'NetworkManager'], check=True)
+        subprocess.run(['sudo', 'systemctl', 'start', 'NetworkManager'], check=True)
+        #Starting service
         subprocess.run(['sudo', 'nmcli', 'radio', 'wifi', 'on'], check=True)
+
         subprocess.run(['sudo', 'nmcli', 'device', 'set', 'wlan0', 'managed', 'yes'], check=True)
 
         subprocess.run(['sudo', 'nmcli', 'connection', 'delete', 'id', SSID], stderr=subprocess.DEVNULL)
