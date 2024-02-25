@@ -4,15 +4,11 @@ import subprocess
 
 app = Flask(__name__)
 
-
-
 def is_connected():
     try:
-        # Ping command varies depending on the operating system
-        # -c: number of pings to send (1 for a simple check)
         response = subprocess.run(['ping', '-c', '1', '8.8.8.8'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # Check if ping command was successful
         return response.returncode == 0
+        print("Ping was successful")
     except Exception as e:
         print(f"An error occurred while checking internet connection: {e}")
         return False
@@ -24,54 +20,34 @@ else:
     print("Device is not connected to the internet.")
 
 def setWifi(SSID, PASSWORD):
-    COUNTRY_CODE = "US"
-    wpa_supplicant_conf = f"""country={COUNTRY_CODE}
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-
-network={{
-    ssid="{SSID}"
-    psk="{PASSWORD}"
-}}
-"""
-    wpa_supplicant_path = "/etc/wpa_supplicant/wpa_supplicant.conf"
-
-    # Update wpa_supplicant.conf using echo and subprocess with sudo
     try:
-        backup_dhcpcd_conf_path = "/home/wokahontas/Desktop/SoilSaver_Backend/dhcpcd.conf"
-        # The target path for dhcpcd.conf
-        target_dhcpcd_conf_path = "/etc/dhcpcd.conf"
+        subprocess.run(['sudo', 'nmcli', 'radio', 'wifi', 'on'], check=True)
+        subprocess.run(['sudo', 'nmcli', 'device', 'set', 'wlan0', 'managed', 'yes'], check=True)
 
-        backup_dnsmasq_conf_path = "/home/wokahontas/Desktop/SoilSaver_Backend/dnsmasq.conf"
+        subprocess.run(['sudo', 'nmcli', 'connection', 'delete', 'id', SSID], stderr=subprocess.DEVNULL)
 
-        target_dnsmasq_conf_path = "/etc/dnsmasq.conf"
+        subprocess.run(['sudo', 'nmcli', 'device', 'wifi', 'connect', SSID, 'password', PASSWORD, 'ifname', 'wlan0'], check=True)
 
-        backup_hostapd_conf_path = "/home/wokahontas/Desktop/SoilSaver_Backend/hostapd"
+        subprocess.run(['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dhcpcd.conf', '/etc/dhcpcd.conf'], check=True)
+        subprocess.run(['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dnsmasq.conf', '/etc/dnsmasq.conf'], check=True)
+        subprocess.run(['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/hostapd', '/etc/default/hostapd'], check=True)
 
-        target_hostapd_conf_path = "/etc/default/hostapd"
+        subprocess.run(['sudo', 'systemctl', 'disable', 'hostapd'], check=True)
+        subprocess.run(['sudo', 'systemctl', 'stop', 'hostapd'], check=True)
+        subprocess.run(['sudo', 'rm', '-f', '/etc/hostapd/hostapd.conf'], check=True)  # Remove hostapd config if it exists
 
-        subprocess.run(['sudo', 'bash', '-c', f'echo "{wpa_supplicant_conf}" > {wpa_supplicant_path}'], check=True)
-
-        # Remove access point configurations and restart services using subprocess with sudo
-        commands = [
-            f"sudo cp {backup_dhcpcd_conf_path} {target_dhcpcd_conf_path}",
-            f"sudo cp {backup_dnsmasq_conf_path} {target_dnsmasq_conf_path}",
-            f"sudo cp {backup_hostapd_conf_path} {target_hostapd_conf_path}",
-            "sudo service dhcpcd restart",
-            "sudo systemctl stop hostapd",
-            "sudo systemctl disable hostapd",
-            "sudo rm /etc/hostapd/hostapd.conf",
-            "sudo systemctl restart dnsmasq"
-        ]
-        for cmd in commands:
-            subprocess.run(cmd, shell=True, check=True)
-        time.sleep(20)
+        print("Wi-Fi credentials updated using NetworkManager. Previous configurations restored.")
+        time.sleep(10)
         is_connected()
-        print("Wi-Fi credentials updated and access point configurations removed. Services restarted successfully.")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         return False
-    return True
+    # time.sleep(20)
+    # if is_connected():
+    #     print("Successfully connected to Wi-Fi.")
+    # else:
+    #     print("Failed to connect to Wi-Fi.")
+    # return True
 
 @app.route('/')
 def hello_world():
