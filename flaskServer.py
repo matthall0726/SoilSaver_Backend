@@ -1,7 +1,25 @@
+import time
 from flask import Flask, request, jsonify
 import subprocess
 
 app = Flask(__name__)
+
+def is_connected():
+    try:
+        # Ping command varies depending on the operating system
+        # -c: number of pings to send (1 for a simple check)
+        response = subprocess.run(['ping', '-c', '1', '8.8.8.8'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Check if ping command was successful
+        return response.returncode == 0
+    except Exception as e:
+        print(f"An error occurred while checking internet connection: {e}")
+        return False
+
+# Example usage
+if is_connected():
+    print("Device is connected to the internet.")
+else:
+    print("Device is not connected to the internet.")
 
 def setWifi(SSID, PASSWORD):
     COUNTRY_CODE = "US"
@@ -25,7 +43,7 @@ network={{
             "sudo sed -i '/interface=wlan0/,/auth_algs=1/d' /etc/dhcpcd.conf",
             "sudo sed -i '/interface=wlan0/,/dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h/d' /etc/dnsmasq.conf",
             "sudo sed -i '/interface=wlan0/,/ssid=PiZeroAP/d' /etc/hostapd/hostapd.conf",
-            'sudo sed -i \'s|DAEMON_CONF="/etc/hostapd/hostapd.conf"|DAEMON_CONF=""|\' /etc/default/hostapd',
+            'sudo sed -i "s|DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"|DAEMON_CONF=\"\"|" /etc/default/hostapd',
             "sudo service dhcpcd restart",
             "sudo systemctl restart hostapd",
             "sudo systemctl restart dnsmasq"
@@ -33,7 +51,8 @@ network={{
 
         for cmd in commands:
             subprocess.run(cmd, shell=True, check=True)
-
+        time.sleep(20)
+        is_connected()
         print("Wi-Fi credentials updated and access point configurations removed. Services restarted successfully.")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
