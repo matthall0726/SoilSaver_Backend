@@ -1,44 +1,60 @@
 import os
-import random
-import string
+import subprocess
 
-def setup_new_ap():
-    with open("/etc/dhcpcd.conf", "a") as dhcpcd_file:
-        dhcpcd_file.write("\ninterface wlan0\n")
-        dhcpcd_file.write("    static ip_address=192.168.4.1/24\n")
-        dhcpcd_file.write("    nohook wpa_supplicant\n")
+def install_packages():
+    subprocess.call(['sudo', 'apt-get', 'install', 'hostapd', 'dnsmasq', '-y'])
 
-    # Configure DNSMASQ
-    with open("/etc/dnsmasq.conf", "a") as dnsmasq_file:
-        dnsmasq_file.write("interface=wlan0\n")
-        dnsmasq_file.write("dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h\n")
+def configure_ap(ssid, passphrase):
+    # Stop services
+    subprocess.call(['sudo', 'systemctl', 'stop', 'hostapd'])
+    subprocess.call(['sudo', 'systemctl', 'stop', 'dnsmasq'])
 
-    res = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-    # Configure HostAPD
-    hostapd_config = f"""
-    interface=wlan0
-    driver=nl80211
-    ssid=Soil_Saver_{res}
-    hw_mode=g
-    channel=7
-    wmm_enabled=0
-    macaddr_acl=0
-    auth_algs=1
-    ignore_broadcast_ssid=0
-    """
-    with open("/etc/hostapd/hostapd.conf", "w") as hostapd_file:
-        hostapd_file.write(hostapd_config)
+    # Set up wlan0 with a static IP
+    with open('/etc/dhcpcd.conf', 'a') as f:
+        f.write('interface wlan0\nstatic ip_address=192.168.4.1/24\nnohook wpa_supplicant\n')
 
-    # Update Hostapd Configuration
-    os.system("sudo sed -i 's/#DAEMON_CONF=\"\"/DAEMON_CONF=\"\/etc\/hostapd\/hostapd.conf\"/' /etc/default/hostapd")
+    # Restart dhcpcd
+    subprocess.call(['sudo', 'service', 'dhcpcd', 'restart'])
 
-    # Start Services
-    os.system("sudo systemctl unmask hostapd")
-    os.system("sudo systemctl enable hostapd")
-    os.system("sudo systemctl enable dnsmasq")
+    # Configure dnsmasq
+    dnsmasq_conf = """interface=wlan0
+dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
+"""
+    with open('/etc/dnsmasq.conf', 'w') as f:
+        f.write(dnsmasq_conf)
 
-    # Restart Raspberry Pi
-    os.system("sudo reboot")
+    # Configure hostapd
+    hostapd_conf = f"""interface=wlan0
+driver=nl80211
+ssid={ssid}
+hw_mode=g
+channel=7
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase={passphrase}
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+"""
+    with open('/etc/hostapd/hostapd.conf', 'w') as f:
+        f.write(hostapd_conf)
 
+    # Point hostapd to the configuration file
+    with open('/etc/default/hostapd', 'a') as f:
+        f.write('DAEMON_CONF="/etc/hostapd/hostapd.conf"\n')
 
+    # Enable and start hostapd and dnsmasq
+    subprocess.call(['sudo', 'systemctl', 'unmask', 'hostapd'])
+    subprocess.call(['sudo', 'systemctl', 'enable', 'hostapd'])
+    subprocess.call(['sudo', 'systemctl', 'start', 'hostapd'])
+    subprocess.call(['sudo', 'systemctl', 'restart', 'dnsmasq'])
 
+    print("Access Point setup complete. SSID: ", ssid)
+
+if __name__ == "__main__":
+    ssid = "PiZeroAP"
+    passphrase = "raspberry"  # Use a strong passphrase in production
+    configure_ap(ssid, passphrase)
