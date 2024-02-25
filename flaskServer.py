@@ -4,6 +4,8 @@ import subprocess
 
 app = Flask(__name__)
 
+
+
 def is_connected():
     try:
         # Ping command varies depending on the operating system
@@ -36,17 +38,29 @@ network={{
 
     # Update wpa_supplicant.conf using echo and subprocess with sudo
     try:
+        backup_dhcpcd_conf_path = "/home/wokahontas/Desktop/SoilSaver_Backend/dhcpcd.conf"
+        # The target path for dhcpcd.conf
+        target_dhcpcd_conf_path = "/etc/dhcpcd.conf"
+
+        backup_dnsmasq_conf_path = "/home/wokahontas/Desktop/SoilSaver_Backend/dnsmasq.conf"
+
+        target_dnsmasq_conf_path = "/etc/dnsmasq.conf"
+
+        backup_hostapd_conf_path = "/home/wokahontas/Desktop/SoilSaver_Backend/hostapd"
+
+        target_hostapd_conf_path = "/etc/default/hostapd"
+
         subprocess.run(['sudo', 'bash', '-c', f'echo "{wpa_supplicant_conf}" > {wpa_supplicant_path}'], check=True)
 
         # Remove access point configurations and restart services using subprocess with sudo
         commands = [
-            "sudo sed -i '/interface=wlan0/,/auth_algs=1/d' /etc/dhcpcd.conf",
-            "sudo sed -i '/interface=wlan0/,/dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h/d' /etc/dnsmasq.conf",
-            "sudo sed -i '/interface=wlan0/,/ssid=PiZeroAP/d' /etc/hostapd/hostapd.conf",
-            'sudo sed -i "s|DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"|DAEMON_CONF=\"\"|" /etc/default/hostapd',
+            f"sudo cp {backup_dhcpcd_conf_path} {target_dhcpcd_conf_path}",
+            f"sudo cp {backup_dnsmasq_conf_path} {target_dnsmasq_conf_path}",
+            f"sudo cp {backup_hostapd_conf_path} {target_hostapd_conf_path}",
             "sudo service dhcpcd restart",
-            "sudo systemctl stop hostapd",  # Stop hostapd instead of restarting
-            "sudo systemctl disable hostapd",  # Optional: Disable hostapd to prevent it from starting on boot
+            "sudo systemctl stop hostapd",
+            "sudo systemctl disable hostapd",
+            "sudo rm /etc/hostapd/hostapd.conf",
             "sudo systemctl restart dnsmasq"
         ]
         for cmd in commands:
