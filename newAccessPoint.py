@@ -11,14 +11,14 @@ def configure_ap(ssid, passphrase):
 
     # Set up wlan0 with a static IP
     with open('/etc/dhcpcd.conf', 'a') as f:
-        f.write('interface wlan0\nstatic ip_address=192.168.4.1/24\nnohook wpa_supplicant\n')
+        f.write('interface wlan0\nstatic ip_address=192.168.1.1/24\nnohook wpa_supplicant\n')
 
     # Restart dhcpcd
     subprocess.call(['sudo', 'service', 'dhcpcd', 'restart'])
 
     # Configure dnsmasq
     dnsmasq_conf = """interface=wlan0
-dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
+dhcp-range=192.168.1.2,192.168.1.20,255.255.255.0,24h
 """
     with open('/etc/dnsmasq.conf', 'w') as f:
         f.write(dnsmasq_conf)
