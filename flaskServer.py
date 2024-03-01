@@ -1,16 +1,25 @@
 import time
 from flask import Flask, request, jsonify
 import subprocess
+import logging
+
+app = Flask(__name__)
+
+if app.debug:
+    app.logger.setLevel(logging.DEBUG)
+else:
+    app.logger.setLevel(logging.INFO)
 
 app = Flask(__name__)
 
 def is_connected():
     try:
         response = subprocess.run(['ping', '-c', '1', '8.8.8.8'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        app.logger.info("Ping was successful")
         return response.returncode == 0
-        print("Ping was successful")
+
     except Exception as e:
-        print(f"An error occurred while checking internet connection: {e}")
+        app.logger.error(f"An error occurred while checking internet connection: {e}")
         return False
 
 # Example usage
@@ -39,12 +48,12 @@ def setWifi(SSID, PASSWORD):
     for command in commands:
         try:
             result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(f"Success: {result.stdout}")
-            print("Wi-Fi credentials updated using NetworkManager. Previous configurations restored.")
+            app.logger.info(f"Success: {result.stdout}")
+            app.logger.info("Wi-Fi credentials updated using NetworkManager. Previous configurations restored.")
             time.sleep(10)
             is_connected()
         except subprocess.CalledProcessError as e:
-            print(f"Error: {e.stderr}")
+            app.logger.error(f"Error: {e.stderr}")
             return False
 
 
@@ -72,11 +81,13 @@ def update_wifi():
     print(ssid)
     print(password)
 
+    app.logger.info(f"Received Wi-Fi update request: {data}")
+
     if setWifi(ssid, password):
 
         return jsonify({'message': 'Wi-Fi credentials updated successfully'})
     else:
         return jsonify({'error': 'Failed to update Wi-Fi credentials'}), 500
 
-def runApp():
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8020, debug=True)
