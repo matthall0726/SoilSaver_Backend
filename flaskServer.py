@@ -37,9 +37,9 @@ def setWifi(SSID, PASSWORD):
         ['sudo', 'nmcli', 'connection', 'delete', 'id', SSID],  # Replace 'YOUR_SSID' with your SSID variable
         ['sudo', 'nmcli', 'device', 'wifi', 'connect', SSID, 'password', PASSWORD, 'ifname', 'wlan0'],
         # Replace 'YOUR_SSID' and 'YOUR_PASSWORD' with your variables
-        ['sudo', 'cp', '-f', '/home/username/Desktop/SoilSaver_Backend/dhcpcd.conf', '/etc/dhcpcd.conf'],
-        ['sudo', 'cp', '-f', '/home/username/Desktop/SoilSaver_Backend/dnsmasq.conf', '/etc/dnsmasq.conf'],
-        ['sudo', 'cp', '-f', '/home/username/Desktop/SoilSaver_Backend/hostapd', '/etc/default/hostapd'],
+        ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dhcpcd.conf', '/etc/dhcpcd.conf'],
+        ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dnsmasq.conf', '/etc/dnsmasq.conf'],
+        ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/hostapd', '/etc/default/hostapd'],
         ['sudo', 'systemctl', 'disable', 'hostapd'],
         ['sudo', 'systemctl', 'stop', 'hostapd'],
         ['sudo', 'rm', '-f', '/etc/hostapd/hostapd.conf']
