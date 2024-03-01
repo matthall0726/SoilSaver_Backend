@@ -90,4 +90,4 @@ def update_wifi():
         return jsonify({'error': 'Failed to update Wi-Fi credentials'}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app.run(host='0.0.0.0', port=8020, debug=True)
