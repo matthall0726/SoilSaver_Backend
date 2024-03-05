@@ -57,7 +57,10 @@ def setWifi(SSID, PASSWORD):
 
     if is_connected():
         print("Successfully connected to Wi-Fi.")
-        shutdown()
+        shutdown_file_path = "shutdown.txt"
+
+        with open(shutdown_file_path, 'w') as file:
+            pass  # No need to write anything, just creating or clearin
     else:
         print("Failed to connect to Wi-Fi.")
     return True
@@ -83,15 +86,6 @@ def update_topic_path(file_path, new_topic_path):
         print(f"Error decoding JSON from file '{file_path}'.")
     except Exception as e:
         print(f"An error occurred: {e}")
-
-
-@app.route('/shutdown', methods=['POST'])
-def shutdown():
-    shutdown_func = request.environ.get('werkzeug.server.shutdown')
-    if shutdown_func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    shutdown_func()
-    return 'Server shutting down...'
 
 
 @app.route('/update_wifi', methods=['POST'])
