@@ -1,6 +1,9 @@
 {
     "deviceName": "",
-    "SSID": "",
-    "Password": "",
-    "topicPath": "poop"
+    "topicPath": "",
+    "setup": false,
+    "username": "wokahontas",
+    "password": "1234",
+    "broker_address": "nc41d4ec.ala.us-east-1.emqxsl.com",
+    "port": 8883
 }

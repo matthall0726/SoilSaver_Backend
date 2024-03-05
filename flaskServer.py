@@ -10,7 +10,13 @@ if app.debug:
 else:
     app.logger.setLevel(logging.INFO)
 
-app = Flask(__name__)
+
+
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
 
 def is_connected():
     try:
@@ -58,13 +64,36 @@ def setWifi(SSID, PASSWORD):
     if is_connected():
         print("Successfully connected to Wi-Fi.")
         shutdown_server()
+        try:
+            subprocess.run(['sudo', 'python3', 'mqttClient.py'], check=True)
+            print("Successfully started the new Python script.")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to start the new Python script: {e.stderr}")
     else:
         print("Failed to connect to Wi-Fi.")
     return True
 
-@app.route('/')
-def hello_world():
-    return 'Hello, Raspberry Pi!'
+
+def update_topic_path(file_path, new_topic_path):
+    try:
+        # Load the existing configuration
+        with open(file_path, 'r') as file:
+            config = json.load(file)
+
+        # Update the 'topicPath' key
+        config['topicPath'] = new_topic_path
+
+        # Write the updated configuration back to the file
+        with open(file_path, 'w') as file:
+            json.dump(config, file, indent=4)
+
+        print(f"Updated 'topicPath' to '{new_topic_path}' in '{file_path}'.")
+    except FileNotFoundError:
+        print(f"File '{file_path}' not found.")
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON from file '{file_path}'.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 @app.route('/update_wifi', methods=['POST'])
@@ -77,6 +106,7 @@ def update_wifi():
     ssid = data['ssid']
     password = data['password']
     topicPath = data['topicPath']
+    update_topic_path("deviceInformation.json", topicPath)
     print(ssid)
     print(password)
 
@@ -88,37 +118,6 @@ def update_wifi():
     else:
         return jsonify({'error': 'Failed to update Wi-Fi credentials'}), 500
 
-
-def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-
-@app.post('/update_topic')
-def update_device_topic():
-    data = request.get_json()
-    topic_path = data.get('topicPath')
-    if not topic_path:
-        return "topicPath is required", 400
-
-    json_file_path = "deviceInformation.json"
-
-    try:
-        with open(json_file_path, "r") as json_file:
-            device_data = json.load(json_file)
-    except (IOError, json.JSONDecodeError) as e:
-        return f"Failed to read or parse the JSON file: {str(e)}", 500
-
-    device_data['topicPath'] = topic_path
-
-    try:
-        with open(json_file_path, "w") as json_file:
-            json.dump(device_data, json_file, indent=4)
-    except IOError as e:
-        return f"Failed to write to the JSON file: {str(e)}", 500
-
-    return "Updated"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8020, debug=True)

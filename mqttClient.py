@@ -2,67 +2,110 @@ import json
 import time
 import paho.mqtt.client as mqtt
 import firebase_admin
-from firebase_admin import credentials
-import paho.mqtt.publish as publish
-import paho.mqtt.subscribe as subscribe
-
-# Initialize Firebase Admin
-cred = credentials.Certificate("soilsave-firebase-adminsdk-nxl0k-b3187dbd27.json")
-firebase_admin.initialize_app(cred)
+from firebase_admin import credentials, firestore
 
 
-with open("deviceInformation.json", "r") as json_file:
-    device_data = json.load(json_file)
+def load_device_config(file_path='deviceInformation.json'):
+    try:
+        with open(file_path, 'r') as json_file:
+            return json.load(json_file)
+    except FileNotFoundError:
+        print("Configuration file not found.")
+        return None
 
 
-broker_address = "nc41d4ec.ala.us-east-1.emqxsl.com"
-port = 8883
-username = "wokahontas"
-password = "1234"
-client_id = "PythonClient"
+def update_device_config(file_path, config):
+    try:
+        with open(file_path, 'w') as json_file:
+            json.dump(config, json_file, indent=4)
+            print("Configuration file updated.")
+    except Exception as e:
+        print(f"Failed to update configuration file: {e}")
 
-# Connect callback
-def on_connect(client, userdata, flags, reason_code, properties=None):
-    print(f"Connected with result code {reason_code}")
+
+def on_connect(client, userdata, flags, rc, properties=None):
+    print(f"Connected with result code {rc}")
+    # Subscribe to a topic
     client.subscribe(device_data['topicPath'])
 
-# Message callback
-def on_message(client, userdata, message):
-    payload_str = message.payload.decode("utf-8")
-    data = json.loads(payload_str)
-    wateringTime = data.get("wateringTime")
-    if wateringTime is not None:
-        water_plant(wateringTime)
+    if not device_data.get('setup', False):
 
-# Simulate watering plant
-def water_plant(wateringTime):
-    print(f"Watering for {wateringTime} seconds.")
-    time.sleep(wateringTime)
-    # Here, add your GPIO code to control the hardware
+        device_data['setup'] = True
+        update_device_config('deviceInformation.json', device_data)
 
-# Publish to a topic
-def create_topic(payload, topic_path):
-    publish.single(topic_path, payload, port=port,
-                   hostname=broker_address,
-                   client_id=client_id,
-                   auth={'username': username, 'password': password},
-                   qos=1)
+        setup_complete_msg = json.dumps({"status": "Wifi has been set up."})
+        client.publish(device_data['topicPath'], setup_complete_msg, qos=1)
+    else:
+        print("Device setup has already been completed.")
 
-# Subscribe to a topic
-def subscribe_to_topic(topic_path):
-    subscribe.simple(topic_path, port=port, qos=1,
-                     hostname=broker_address,
-                     client_id=client_id,
-                     auth={'username': username, 'password': password})
+    mqtt_mqtt_msg = json.dumps({"status": "MQTT has been set up."})
+    client.publish(device_data['topicPath'], mqtt_mqtt_msg, qos=1)
+
+    if check_firestore_connectivity():
+        mqtt_firebase_message = json.dumps({"status": "FireBase has been set up."})
+        client.publish(device_data['topicPath'], mqtt_firebase_message, qos=1)
+
+
+def check_firestore_connectivity():
+    try:
+        docs = db.collection(u'users').limit(1).get()
+
+        print("Connected to Firestore, collection accessed.")
+
+        if len(docs) > 0:
+            print("The collection contains documents.")
+        else:
+            print("The collection is empty.")
+
+        return True
+    except Exception as e:
+        print(f"Failed to connect to Firestore: {e}")
+        return False
+
+
+def on_message(client, userdata, msg):
+    try:
+
+        incomingData = json.loads(msg.payload.decode())
+
+        print(f"Received message on topic {msg.topic}: {incomingData}")
+
+        if 'wateringTime' in incomingData:
+            wateringTime = incomingData['wateringTime']
+            print(f"Temperature: {wateringTime}")
+        else:
+            print("The message does not contain the 'temperature' field.")
+
+        if 'humidity' in incomingData:
+            humidity = incomingData['humidity']
+            print(f"Humidity: {humidity}")
+
+    except json.JSONDecodeError:
+        print("Failed to decode JSON from message.")
+    except UnicodeDecodeError:
+        print("Failed to decode message payload.")
+
 
 def main():
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+    cred_path = "soilsave-firebase-adminsdk-nxl0k-b3187dbd27.json"
+    cred = credentials.Certificate(cred_path)
+    global db
+    db = firestore.client()
+    firebase_admin.initialize_app(cred)
+    global device_data
+    device_data = load_device_config()
+    if device_data is None:
+        print("Failed to load device configuration. Exiting...")
+        return
+
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="Test")
     client.on_connect = on_connect
     client.on_message = on_message
     client.tls_set()
-    client.username_pw_set(username, password)
-    client.connect_async(broker_address, port)
+    client.username_pw_set(device_data['username'], device_data['password'])
+    client.connect_async(device_data['broker_address'], device_data['port'])
     client.loop_forever()
+
 
 if __name__ == "__main__":
     main()
