@@ -11,13 +11,6 @@ else:
     app.logger.setLevel(logging.INFO)
 
 
-
-def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-
 def is_connected():
     try:
         response = subprocess.run(['ping', '-c', '1', '8.8.8.8'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -28,11 +21,13 @@ def is_connected():
         app.logger.error(f"An error occurred while checking internet connection: {e}")
         return False
 
+
 # Example usage
 if is_connected():
     print("Device is connected to the internet.")
 else:
     print("Device is not connected to the internet.")
+
 
 def setWifi(SSID, PASSWORD):
     commands = [
@@ -63,12 +58,7 @@ def setWifi(SSID, PASSWORD):
 
     if is_connected():
         print("Successfully connected to Wi-Fi.")
-        shutdown_server()
-        try:
-            subprocess.run(['sudo', 'python3', 'mqttClient.py'], check=True)
-            print("Successfully started the new Python script.")
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to start the new Python script: {e.stderr}")
+        shutdown()
     else:
         print("Failed to connect to Wi-Fi.")
     return True
@@ -96,6 +86,15 @@ def update_topic_path(file_path, new_topic_path):
         print(f"An error occurred: {e}")
 
 
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    shutdown_func = request.environ.get('werkzeug.server.shutdown')
+    if shutdown_func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    shutdown_func()
+    return 'Server shutting down...'
+
+
 @app.route('/update_wifi', methods=['POST'])
 def update_wifi():
     data = request.get_json()
@@ -121,4 +120,3 @@ def update_wifi():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8020, debug=True)
-
