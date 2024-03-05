@@ -35,7 +35,6 @@ def setWifi(SSID, PASSWORD):
         ['sudo', 'systemctl', 'start', 'NetworkManager'],
         ['sudo', 'nmcli', 'radio', 'wifi', 'on'],
         ['sudo', 'nmcli', 'device', 'set', 'wlan0', 'managed', 'yes'],
-        ['sudo', 'nmcli', 'connection', 'delete', 'id', SSID],  # Replace 'YOUR_SSID' with your SSID variable
         ['sudo', 'nmcli', 'device', 'wifi', 'connect', SSID, 'password', PASSWORD, 'ifname', 'wlan0'],
         # Replace 'YOUR_SSID' and 'YOUR_PASSWORD' with your variables
         ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dhcpcd.conf', '/etc/dhcpcd.conf'],
