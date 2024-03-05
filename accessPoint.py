@@ -2,8 +2,6 @@ import os
 import random
 import subprocess
 
-def install_packages():
-    subprocess.call(['sudo', 'apt-get', 'install', 'hostapd', 'dnsmasq', '-y'])
 
 def configure_ap(ssid, passphrase):
     # Stop services

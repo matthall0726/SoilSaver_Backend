@@ -23,13 +23,14 @@ def main():
 
     if not config.get('setup', False):
         print("Setup is not completed. Running accessPoint.py and flaskServer.py...")
-        run_script('accessPoint.py')
-        run_script('flaskServer.py')
+        subprocess.run(['sudo', 'python3', 'accessPoint.py'], check=True)
+        subprocess.run(['python3', 'flaskServer.py'], check=True)
+
 
     else:
         # If setup has been completed, run mqtt.py
         print("Setup is already completed. Running mqtt.py...")
-        run_script('mqttClient.py')
+        subprocess.run(['python3', 'mqttClient.py'], check=True)
 
 if __name__ == "__main__":
     main()
