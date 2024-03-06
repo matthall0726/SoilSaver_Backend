@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import subprocess
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Setup logging
@@ -98,11 +99,11 @@ def update_topic_path(file_path, new_topic_path):
         logging.error(f"An error occurred: {e}")
 
 
-def run(server_class=HTTPServer, handler_class=WiFiHTTPHandler, port=8020):
+def run(server_class=HTTPServer, handler_class=WiFiHTTPHandler, port=8020, host='192.168.1.12'):
     global httpd  # Indicate that we are using the global httpd variable
-    server_address = ('', port)
+    server_address = (host, port)
     httpd = server_class(server_address, handler_class)
-    logging.info(f"Starting httpd server on port {port}...")
+    logging.info(f"Starting httpd server {host}:{port}...")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -114,7 +115,7 @@ def run(server_class=HTTPServer, handler_class=WiFiHTTPHandler, port=8020):
 # Your existing function implementations for is_connected, setWifi, and update_topic_path
 
 def check_shutdown_trigger():
-    global httpd  # Although not necessary to declare again, it's here for clarity
+    global httpd
     while True:
         if os.path.exists("shutdown.txt"):
             print("Shutdown trigger found. Shutting down server.")
@@ -124,10 +125,12 @@ def check_shutdown_trigger():
                 break
 
 if __name__ == "__main__":
-    # Start the server in a new thread
-    server_thread = threading.Thread(target=lambda: run(HTTPServer, WiFiHTTPHandler, 8020))
+    host_ip = '192.168.1.12'
+    port = 8020
+    server_thread = threading.Thread(target=lambda: run(HTTPServer, WiFiHTTPHandler, port, host_ip))
     server_thread.start()
 
+    time.sleep(2)
     # Check for shutdown trigger in the main thread
     check_shutdown_trigger()
 
