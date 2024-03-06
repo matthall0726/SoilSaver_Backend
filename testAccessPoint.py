@@ -1,4 +1,27 @@
+import random
 import subprocess
+
+
+def clear_previous_configurations():
+    print("Clearing previous configurations...")
+    # Move old dnsmasq and hostapd configurations to backup files
+    subprocess.call(['sudo', 'mv', '/etc/dnsmasq.conf', '/etc/dnsmasq.conf.backup'], stderr=subprocess.DEVNULL)
+    subprocess.call(['sudo', 'mv', '/etc/hostapd/hostapd.conf', '/etc/hostapd/hostapd.conf.backup'],
+                    stderr=subprocess.DEVNULL)
+
+    # Clear custom configurations from dhcpcd.conf
+    # This example comments out the static IP configuration. Adjust according to your needs.
+    with open('/etc/dhcpcd.conf', 'r+') as f:
+        lines = f.readlines()
+        f.seek(0)
+        for line in lines:
+            if 'interface wlan0' not in line and 'static ip_address' not in line and 'nohook wpa_supplicant' not in line:
+                f.write(line)
+        f.truncate()
+
+    # Restart services to apply changes
+    subprocess.call(['sudo', 'systemctl', 'daemon-reload'])
+    subprocess.call(['sudo', 'systemctl', 'restart', 'dhcpcd'])
 
 def stop_services():
     # Stop the hostapd and dnsmasq services to ensure they don't interfere
@@ -7,7 +30,7 @@ def stop_services():
     subprocess.call(['sudo', 'systemctl', 'stop', 'dnsmasq'])
 
 def create_visible_ap(ssid, password):
-    # Define connection name
+    clear_previous_configurations()
     connection_name = ssid
 
     # Delete existing connection (if exists)
@@ -40,7 +63,8 @@ def create_visible_ap(ssid, password):
     print(f"Visible Access Point '{ssid}' setup complete.")
 
 if __name__ == "__main__":
-    ssid = "Your_SSID"
-    password = "Your_Password"
+    random_number = ''.join([str(random.randint(0, 9)) for _ in range(5)])
+    ssid = "Soil_Saver_" + random_number
+    passphrase = "raspberry"  # Use a strong passphrase in production
     stop_services()  # Ensure hostapd and dnsmasq are stopped
-    create_visible_ap(ssid, password)
+    create_visible_ap(ssid, passphrase)
