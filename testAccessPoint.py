@@ -61,10 +61,37 @@ def create_visible_ap(ssid, password):
     subprocess.run(['sudo', 'nmcli', 'con', 'up', connection_name])
 
     print(f"Visible Access Point '{ssid}' setup complete.")
+def start_network_manager():
+    # Check if NetworkManager is active
+    nm_status = subprocess.run(['sudo', 'systemctl', 'is-active', 'NetworkManager'], stdout=subprocess.PIPE)
+    if nm_status.stdout.decode().strip() != "active":
+        print("NetworkManager is not active. Starting NetworkManager...")
+        # Start NetworkManager service
+        subprocess.run(['sudo', 'systemctl', 'start', 'NetworkManager'], check=True)
+        print("NetworkManager started.")
+    else:
+        print("NetworkManager is already running.")
+
+    # Enable NetworkManager to start on boot
+    subprocess.run(['sudo', 'systemctl', 'enable', 'NetworkManager'], check=True)
+    print("NetworkManager is enabled to start on boot.")
+
+def check_network_manager():
+    # Check the status of NetworkManager
+    try:
+        nm_status_check = subprocess.run(['sudo', 'systemctl', 'status', 'NetworkManager'], stdout=subprocess.PIPE, check=True)
+        print(nm_status_check.stdout.decode())
+    except subprocess.CalledProcessError as e:
+        print("Failed to get the status of NetworkManager.")
+        print(e)
+
+
 
 if __name__ == "__main__":
     random_number = ''.join([str(random.randint(0, 9)) for _ in range(5)])
     ssid = "Soil_Saver_" + random_number
-    passphrase = "raspberry"  # Use a strong passphrase in production
-    stop_services()  # Ensure hostapd and dnsmasq are stopped
+    passphrase = "raspberry"
+    stop_services()
+    check_network_manager()
+    start_network_manager()
     create_visible_ap(ssid, passphrase)
