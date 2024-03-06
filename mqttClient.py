@@ -1,4 +1,5 @@
 import json
+import threading
 import time
 import paho.mqtt.client as mqtt
 import firebase_admin
@@ -23,27 +24,34 @@ def update_device_config(file_path, config):
         print(f"Failed to update configuration file: {e}")
 
 
+def publish_with_delay(client, topic, message, delay, qos=1):
+    def task():
+        time.sleep(delay)
+        client.publish(topic, message, qos=qos)
+        print(f"Published message to {topic}: {message}")
+    threading.Thread(target=task).start()
+
 def on_connect(client, userdata, flags, rc, properties=None):
     print(f"Connected with result code {rc}")
-    # Subscribe to a topic
     client.subscribe(device_data['topicPath'])
+    on_new_connection(client)
 
+def on_new_connection(client):
     if not device_data.get('setup', False):
-
         device_data['setup'] = True
         update_device_config('deviceInformation.json', device_data)
 
-        setup_complete_msg = json.dumps({"status": "Wifi has been set up."})
-        client.publish(device_data['topicPath'], setup_complete_msg, qos=1)
+        setup_complete_msg = json.dumps({"status": "Wifi is set up."})
+        publish_with_delay(client, device_data['topicPath'], setup_complete_msg, delay=8)
+
+        mqtt_mqtt_msg = json.dumps({"status": "MQTT is set up."})
+        publish_with_delay(client, device_data['topicPath'], mqtt_mqtt_msg, delay=16)
+
+        if check_firestore_connectivity():
+            mqtt_firebase_message = json.dumps({"status": "FireBase is set up."})
+            publish_with_delay(client, device_data['topicPath'], mqtt_firebase_message, delay=24)
     else:
         print("Device setup has already been completed.")
-
-    mqtt_mqtt_msg = json.dumps({"status": "MQTT has been set up."})
-    client.publish(device_data['topicPath'], mqtt_mqtt_msg, qos=1)
-
-    if check_firestore_connectivity():
-        mqtt_firebase_message = json.dumps({"status": "FireBase has been set up."})
-        client.publish(device_data['topicPath'], mqtt_firebase_message, qos=1)
 
 
 def check_firestore_connectivity():
@@ -89,9 +97,10 @@ def on_message(client, userdata, msg):
 def main():
     cred_path = "soilsave-firebase-adminsdk-nxl0k-b3187dbd27.json"
     cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
     global db
     db = firestore.client()
-    firebase_admin.initialize_app(cred)
+
     global device_data
     device_data = load_device_config()
     if device_data is None:
