@@ -30,7 +30,7 @@ def stop_services():
     subprocess.call(['sudo', 'systemctl', 'stop', 'dnsmasq'])
 
 def create_visible_ap(ssid, password):
-    clear_previous_configurations()
+
     connection_name = ssid
 
     # Delete existing connection (if exists)
@@ -92,6 +92,7 @@ if __name__ == "__main__":
     ssid = "Soil_Saver_" + random_number
     passphrase = "raspberry"
     stop_services()
+    clear_previous_configurations()
     check_network_manager()
     start_network_manager()
     create_visible_ap(ssid, passphrase)
