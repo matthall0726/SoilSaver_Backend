@@ -25,5 +25,5 @@ def configure_ap_nmcli(ssid, passphrase):
 
 if __name__ == "__main__":
     ssid = "Soil_Saver"
-    passphrase = "1234567"  # Use a strong passphrase in production
+    passphrase = "raspberry"  # Use a strong passphrase in production
     configure_ap_nmcli(ssid, passphrase)
