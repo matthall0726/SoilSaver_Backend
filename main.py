@@ -24,7 +24,7 @@ def main():
     if not config.get('setup', False):
         shutdown_signal_path = "shutdown_signal.txt"
         print("Setup is not completed. Running accessPoint.py and flaskServer.py...")
-        subprocess.run(['sudo', 'python3', 'accessPoint.py'], check=True)
+        subprocess.run(['sudo', 'python3', 'testAccessPoint.py'], check=True)
         subprocess.run(['python3', 'testServer.py'], check=True)
         subprocess.run(['python3', 'mqttClient.py'], check=True)
 
