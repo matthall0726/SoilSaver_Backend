@@ -22,12 +22,6 @@ def is_connected():
         return False
 
 
-# Example usage
-if is_connected():
-    print("Device is connected to the internet.")
-else:
-    print("Device is not connected to the internet.")
-
 
 def setWifi(SSID, PASSWORD):
     commands = [
