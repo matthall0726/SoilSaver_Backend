@@ -99,7 +99,7 @@ def update_topic_path(file_path, new_topic_path):
         logging.error(f"An error occurred: {e}")
 
 
-def run(server_class=HTTPServer, handler_class=WiFiHTTPHandler, port=8020, host='192.168.1.12'):
+def run(server_class=HTTPServer, handler_class=WiFiHTTPHandler, port=8020, host='0.0.0.0'):
     global httpd  # Indicate that we are using the global httpd variable
     server_address = (host, port)
     httpd = server_class(server_address, handler_class)
@@ -125,7 +125,7 @@ def check_shutdown_trigger():
                 break
 
 if __name__ == "__main__":
-    host_ip = '192.168.1.12'
+    host_ip = '0.0.0.0'
     port = 8020
     server_thread = threading.Thread(target=lambda: run(HTTPServer, WiFiHTTPHandler, port, host_ip))
     server_thread.start()
