@@ -1,40 +1,46 @@
-import os
-import random
 import subprocess
 
-def reset_network_manager():
-    print("Resetting Network Manager...")
-    # Reload NetworkManager to clear caches
-    subprocess.call(['sudo', 'systemctl', 'restart', 'NetworkManager'])
-    # Optionally, delete all saved connections to ensure a clean state
-    subprocess.call(['sudo', 'nmcli', 'connection', 'delete', '--all'])
+def stop_services():
+    # Stop the hostapd and dnsmasq services to ensure they don't interfere
+    print("Stopping hostapd and dnsmasq services...")
+    subprocess.call(['sudo', 'systemctl', 'stop', 'hostapd'])
+    subprocess.call(['sudo', 'systemctl', 'stop', 'dnsmasq'])
 
-def configure_ap_nmcli(ssid, passphrase):
-    # Generating a random SSID suffix
-    random_number = ''.join([str(random.randint(0, 9)) for _ in range(5)])
-    ssid_full = f"{ssid}_{random_number}"
+def create_visible_ap(ssid, password):
+    # Define connection name
+    connection_name = ssid
 
-    print(f"Configuring Access Point: {ssid_full}")
+    # Delete existing connection (if exists)
+    subprocess.run(['sudo', 'nmcli', 'con', 'del', connection_name], stderr=subprocess.DEVNULL)
 
-    # Delete existing connection with the same SSID (if exists)
-    # This step is now redundant because of the reset, but left here if a selective delete is preferred
-    subprocess.call(['sudo', 'nmcli', 'connection', 'delete', ssid_full], stderr=subprocess.DEVNULL)
-
-    # Create a new Wi-Fi access point
-    subprocess.call([
-        'sudo', 'nmcli', 'device', 'wifi', 'hotspot',
-        'ifname', 'wlan0',
-        'con-name', ssid_full,
-        'ssid', ssid_full,
-        'band', 'bg',  # Use 'a' for 5 GHz
-        'channel', '7',
-        'password', passphrase
+    # Create a new Wi-Fi access point connection profile
+    subprocess.run([
+        'sudo', 'nmcli', 'con', 'add',
+        'type', 'wifi',
+        'ifname', '*',
+        'con-name', connection_name,
+        'ssid', ssid,
+        'autoconnect', 'yes',
+        'save', 'yes'
     ])
 
-    print(f"Access Point '{ssid_full}' setup complete.")
+    # Set Wi-Fi security
+    subprocess.run([
+        'sudo', 'nmcli', 'con', 'modify',
+        connection_name,
+        '802-11-wireless.mode', 'ap',
+        '802-11-wireless.band', 'bg',
+        'wifi-sec.key-mgmt', 'wpa-psk',
+        'wifi-sec.psk', password
+    ])
+
+    # Bring up the connection
+    subprocess.run(['sudo', 'nmcli', 'con', 'up', connection_name])
+
+    print(f"Visible Access Point '{ssid}' setup complete.")
 
 if __name__ == "__main__":
-    ssid = "Soil_Saver"
-    passphrase = "raspberry"  # Use a strong passphrase in production
-    reset_network_manager()  # Reset Network Manager to clear caches and existing connections
-    configure_ap_nmcli(ssid, passphrase)
+    ssid = "Your_SSID"
+    password = "Your_Password"
+    stop_services()  # Ensure hostapd and dnsmasq are stopped
+    create_visible_ap(ssid, password)
