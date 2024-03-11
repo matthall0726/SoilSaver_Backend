@@ -66,21 +66,22 @@ def setWifi(SSID, PASSWORD):
         ['sudo', 'nmcli', 'radio', 'wifi', 'on'],
         ['sudo', 'nmcli', 'device', 'set', 'wlan0', 'managed', 'yes'],
         ['sudo', 'nmcli', 'device', 'wifi', 'connect', SSID, 'password', PASSWORD, 'ifname', 'wlan0'],
-        ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dhcpcd.conf', '/etc/dhcpcd.conf'],
-        ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/dnsmasq.conf', '/etc/dnsmasq.conf'],
-        ['sudo', 'cp', '-f', '/home/wokahontas/Desktop/SoilSaver_Backend/hostapd', '/etc/default/hostapd'],
         ['sudo', 'systemctl', 'disable', 'hostapd'],
         ['sudo', 'systemctl', 'stop', 'hostapd'],
         ['sudo', 'rm', '-f', '/etc/hostapd/hostapd.conf']
     ]
-    try:
-        for command in commands:
-            subprocess.check_call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    for command in commands:
+        try:
+            result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             logging.info(f"Executed: {' '.join(command)}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to execute command: {' '.join(e.cmd)}, Error: {e.stderr.decode()}")
-        return False
+            if result.stdout:
+                logging.info(result.stdout.decode())
+            if result.stderr:
+                logging.warning(result.stderr.decode())
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Failed to execute command: {' '.join(e.cmd)}, Error: {e.stderr.decode()}")
+            return False
+    return True
 
 
 def update_topic_path(file_path, new_topic_path):
